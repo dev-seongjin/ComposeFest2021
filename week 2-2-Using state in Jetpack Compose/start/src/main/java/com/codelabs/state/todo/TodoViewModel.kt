@@ -16,25 +16,59 @@
 
 package com.codelabs.state.todo
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
 class TodoViewModel : ViewModel() {
 
+    //private state
+    //mutableState, State, Snapshot에 대해 더 공부해보기
+    private var currentEditPosition by mutableStateOf(-1)
+
     // state: todoItems
-    private var _todoItems = MutableLiveData(listOf<TodoItem>())
-    val todoItems: LiveData<List<TodoItem>> = _todoItems
+    //mutableState와 mutableStateList의 차이 공부 해보기
+    var todoItems = mutableStateListOf<TodoItem>()
+    private set
+
+    //state
+    //이게 어떤 원리로 Observable이 되는지 알아보기
+    val currentEditItem: TodoItem?
+        get() = todoItems.getOrNull(currentEditPosition)
 
     // event: addItem
     fun addItem(item: TodoItem) {
-        _todoItems.value = _todoItems.value!! + listOf(item)
+        todoItems.add(item)
     }
 
     // event: removeItem
     fun removeItem(item: TodoItem) {
-        _todoItems.value = _todoItems.value!!.toMutableList().also {
-            it.remove(item)
+        todoItems.remove(item)
+        onEditDone() //아이템 삭제시 편집 상태를 유지하면 안됨
+    }
+
+    //event: onEditItemSelected
+    fun onEditItemSelected(item: TodoItem) {
+        //만약 item이 존재하지 않으면 -1이므로 편집 비활성화 상태와 동일
+        currentEditPosition = todoItems.indexOf(item)
+    }
+
+    //event: onEditDone
+    fun onEditDone() {
+        currentEditPosition = -1
+    }
+
+    //event: onEditItemChange
+    fun onEditItemChange(item: TodoItem) {
+        val currentItem = requireNotNull(currentEditItem)
+        require(currentItem.id == item.id) {
+            "You can only change an item with the same id as currentEditItem"
         }
+
+        todoItems[currentEditPosition] = item
     }
 }
